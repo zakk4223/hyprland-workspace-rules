@@ -1,0 +1,11 @@
+[repository]
+name = "monitor-workspace-rules"
+authors = ["Zakk"]
+
+[monitor-workspace-rules]
+description = "Allow per monitor workspace rules"
+authors = ["Zakk"]
+output = "monitor-workspace-rules.so"
+build = [
+	"make all"
+]
