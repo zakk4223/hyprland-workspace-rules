@@ -190,14 +190,12 @@ std::string hkgetWorkspaceRuleData(const SWorkspaceRule& r, HyprCtl::eHyprCtlOut
 				const auto PMONITOR = g_pCompositor->getMonitorFromID(pWorkspace->m_iMonitorID);
 				const auto MONITORNAME = PMONITOR->szName;
 				std::string MONITORDESC = PMONITOR->output->description ? PMONITOR->output->description : "";
-				Debug::log(LOG, "LOOKING FOR MONITOR NAME {}", MONITORNAME);
 				//Try monitor specific rules. I overloaded the workspace string....
 				const auto MT = std::find_if(g_pConfigManager->m_dWorkspaceRules.begin(), g_pConfigManager->m_dWorkspaceRules.end(), [&](const auto& other) {
 					return other.workspaceString == MONITORNAME || (other.workspaceString.starts_with("desc:") && (other.workspaceString.substr(5) == MONITORDESC || other.workspaceString.substr(5) == removeBeginEndSpacesTabs(MONITORDESC.substr(0,MONITORDESC.find_first_of('('))))); });
 				if (MT == g_pConfigManager->m_dWorkspaceRules.end()) {
         	return SWorkspaceRule{};
 				} else {
-					Debug::log(LOG, "FOUND RULE!");
 					return *MT;
 				}
 		}
