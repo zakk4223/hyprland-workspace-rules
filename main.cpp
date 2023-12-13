@@ -1,11 +1,13 @@
 #include <hyprland/src/includes.hpp>
 #include <any>
 #include <sstream>
+#include <format>
 #define private public
 #include <hyprland/src/config/ConfigManager.hpp>
 #undef private
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/SharedDefs.hpp>
+#include <hyprland/src/debug/HyprCtl.hpp>
 #include "globals.hpp"
 
 
@@ -20,6 +22,62 @@ namespace {
 
 
 std::deque<SWorkspaceRule> g_vMonitorWorkspaceRules;
+
+ inline CFunctionHook *g_pgetWorkspaceRuleDataHook = nullptr;
+std::string hkgetWorkspaceRuleData(const SWorkspaceRule& r, HyprCtl::eHyprCtlOutputFormat format) {
+    const auto boolToString = [](const bool b) -> std::string { return b ? "true" : "false"; };
+    if (format == HyprCtl::FORMAT_JSON) {
+        const std::string monitor    = r.monitor.empty() ? "" : std::format(",\n    \"monitor\": \"{}\"", escapeJSONStrings(r.monitor));
+        const std::string default_   = (bool)(r.isDefault) ? std::format(",\n    \"default\": {}", boolToString(r.isDefault)) : "";
+        const std::string persistent = (bool)(r.isPersistent) ? std::format(",\n    \"persistent\": {}", boolToString(r.isPersistent)) : "";
+        const std::string gapsIn     = (bool)(r.gapsIn) ? std::format(",\n    \"gapsIn\": {}", r.gapsIn.value()) : "";
+        const std::string gapsOut    = (bool)(r.gapsOut) ? std::format(",\n    \"gapsOut\": {}", r.gapsOut.value()) : "";
+        const std::string borderSize = (bool)(r.borderSize) ? std::format(",\n    \"borderSize\": {}", r.borderSize.value()) : "";
+        const std::string border     = (bool)(r.border) ? std::format(",\n    \"border\": {}", boolToString(r.border.value())) : "";
+        const std::string rounding   = (bool)(r.rounding) ? std::format(",\n    \"rounding\": {}", boolToString(r.rounding.value())) : "";
+        const std::string decorate   = (bool)(r.decorate) ? std::format(",\n    \"decorate\": {}", boolToString(r.decorate.value())) : "";
+        const std::string shadow     = (bool)(r.shadow) ? std::format(",\n    \"shadow\": {}", boolToString(r.shadow.value())) : "";
+				std::string layoutopt = "";
+				if (!r.layoutopts.empty()) {
+					layoutopt = std::format(",\n    \"layoutopts\": {{");
+					bool needsComma = false;
+					std::for_each(r.layoutopts.begin(), r.layoutopts.end(), [&](std::pair<std::string, std::string>kv) {
+							layoutopt += std::format("{}\n        \"{}\":\"{}\"", needsComma ? "," : "", kv.first, kv.second);
+							needsComma = true;
+					});
+					layoutopt += "    }";
+				}
+        std::string       result = std::format(R"#({{
+    "workspaceString": "{}"{}{}{}{}{}{}{}{}{}
+}})#",
+                                               escapeJSONStrings(r.workspaceString), monitor, default_, persistent, gapsIn, gapsOut, borderSize, border, rounding, decorate, shadow, layoutopt);
+
+        return result;
+    } else {
+        const std::string monitor    = std::format("\tmonitor: {}\n", r.monitor.empty() ? "<unset>" : escapeJSONStrings(r.monitor));
+        const std::string default_   = std::format("\tdefault: {}\n", (bool)(r.isDefault) ? boolToString(r.isDefault) : "<unset>");
+        const std::string persistent = std::format("\tpersistent: {}\n", (bool)(r.isPersistent) ? boolToString(r.isPersistent) : "<unset>");
+        const std::string gapsIn     = std::format("\tgapsIn: {}\n", (bool)(r.gapsIn) ? std::to_string(r.gapsIn.value()) : "<unset>");
+        const std::string gapsOut    = std::format("\tgapsOut: {}\n", (bool)(r.gapsOut) ? std::to_string(r.gapsOut.value()) : "<unset>");
+        const std::string borderSize = std::format("\tborderSize: {}\n", (bool)(r.borderSize) ? std::to_string(r.borderSize.value()) : "<unset>");
+        const std::string border     = std::format("\tborder: {}\n", (bool)(r.border) ? boolToString(r.border.value()) : "<unset>");
+        const std::string rounding   = std::format("\trounding: {}\n", (bool)(r.rounding) ? boolToString(r.rounding.value()) : "<unset>");
+        const std::string decorate   = std::format("\tdecorate: {}\n", (bool)(r.decorate) ? boolToString(r.decorate.value()) : "<unset>");
+        const std::string shadow     = std::format("\tshadow: {}\n", (bool)(r.shadow) ? boolToString(r.shadow.value()) : "<unset>");
+     
+				std::string layoutopt  = std::format("\tlayoutopt: {}", r.layoutopts.empty() ? "<unset>\n" : ""); 
+				if (!r.layoutopts.empty()) {
+					std::for_each(r.layoutopts.begin(), r.layoutopts.end(), [&](std::pair<std::string, std::string>kv) {
+							layoutopt += std::format("\n    {}:{}", kv.first, kv.second);
+					});
+				}
+
+        std::string       result = std::format("Workspace rule {}:\n{}{}{}{}{}{}{}{}{}{}{}\n", escapeJSONStrings(r.workspaceString), monitor, default_, persistent, gapsIn, gapsOut,
+                                               borderSize, border, rounding, decorate, shadow,layoutopt);
+
+        return result;
+    }
+	}
 
 	void onMonitorWSRule(const std::string& command, const std::string& value) {
     // This can either be the monitor or the workspace identifier
@@ -129,6 +187,9 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 	 	static const auto WSRULEMETHODS = HyprlandAPI::findFunctionsByName(PHANDLE, "getWorkspaceRuleFor");
 		g_pgetWorkspaceRuleForHook = HyprlandAPI::createFunctionHook(PHANDLE, WSRULEMETHODS[0].address, (void *)&hkgetWorkspaceRuleFor);
 		g_pgetWorkspaceRuleForHook->hook();
+	 	static const auto WSRULECTL = HyprlandAPI::findFunctionsByName(PHANDLE, "getWorkspaceRuleData");
+		g_pgetWorkspaceRuleDataHook = HyprlandAPI::createFunctionHook(PHANDLE, WSRULECTL[0].address, (void *)&hkgetWorkspaceRuleData);
+		g_pgetWorkspaceRuleDataHook->hook();
 		
 		HyprlandAPI::addConfigKeyword(PHANDLE, "monitorwsrule", [&](const std::string& k, const std::string& v) {onMonitorWSRule(k,v);});
 
