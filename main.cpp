@@ -197,6 +197,7 @@ std::string hkgetWorkspaceRuleData(const SWorkspaceRule& r, HyprCtl::eHyprCtlOut
 				if (MT == g_pConfigManager->m_dWorkspaceRules.end()) {
         	return SWorkspaceRule{};
 				} else {
+					Debug::log(LOG, "FOUND RULE!");
 					return *MT;
 				}
 		}
