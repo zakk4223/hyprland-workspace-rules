@@ -24,6 +24,12 @@ namespace {
 std::deque<SWorkspaceRule> g_vMonitorWorkspaceRules;
 
  inline CFunctionHook *g_pgetWorkspaceRuleDataHook = nullptr;
+
+	static void trimTrailingComma(std::string& str) {
+    if (!str.empty() && str.back() == ',')
+        str.pop_back();
+	}
+
 std::string hkgetWorkspaceRuleData(const SWorkspaceRule& r, HyprCtl::eHyprCtlOutputFormat format) {
     const auto boolToString = [](const bool b) -> std::string { return b ? "true" : "false"; };
     if (format == HyprCtl::FORMAT_JSON) {
@@ -68,7 +74,7 @@ std::string hkgetWorkspaceRuleData(const SWorkspaceRule& r, HyprCtl::eHyprCtlOut
 				std::string layoutopt  = std::format("\tlayoutopt: {}", r.layoutopts.empty() ? "<unset>\n" : ""); 
 				if (!r.layoutopts.empty()) {
 					std::for_each(r.layoutopts.begin(), r.layoutopts.end(), [&](std::pair<std::string, std::string>kv) {
-							layoutopt += std::format("\n    {}:{}", kv.first, kv.second);
+							layoutopt += std::format("\n            {}:{}", kv.first, kv.second);
 					});
 				}
 
@@ -77,6 +83,26 @@ std::string hkgetWorkspaceRuleData(const SWorkspaceRule& r, HyprCtl::eHyprCtlOut
 
         return result;
     }
+	}
+
+	std::string hkworkspaceRulesRequest(HyprCtl::eHyprCtlOutputFormat format) {
+    std::string result = "";
+    if (format == HyprCtl::FORMAT_JSON) {
+        result += "[";
+        for (auto& r : g_pConfigManager->getAllWorkspaceRules()) {
+            result += hkgetWorkspaceRuleData(r, format);
+            result += ",";
+        }
+
+        trimTrailingComma(result);
+        result += "]";
+    } else {
+        for (auto& r : g_pConfigManager->getAllWorkspaceRules()) {
+            result += hkgetWorkspaceRuleData(r, format);
+        }
+    }
+
+    return result;
 	}
 
 	void onMonitorWSRule(const std::string& command, const std::string& value) {
@@ -187,8 +213,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 	 	static const auto WSRULEMETHODS = HyprlandAPI::findFunctionsByName(PHANDLE, "getWorkspaceRuleFor");
 		g_pgetWorkspaceRuleForHook = HyprlandAPI::createFunctionHook(PHANDLE, WSRULEMETHODS[0].address, (void *)&hkgetWorkspaceRuleFor);
 		g_pgetWorkspaceRuleForHook->hook();
-	 	static const auto WSRULECTL = HyprlandAPI::findFunctionsByName(PHANDLE, "getWorkspaceRuleData");
-		g_pgetWorkspaceRuleDataHook = HyprlandAPI::createFunctionHook(PHANDLE, WSRULECTL[0].address, (void *)&hkgetWorkspaceRuleData);
+	 	static const auto WSRULECTL = HyprlandAPI::findFunctionsByName(PHANDLE, "workspaceRulesRequest");
+		g_pgetWorkspaceRuleDataHook = HyprlandAPI::createFunctionHook(PHANDLE, WSRULECTL[0].address, (void *)&hkworkspaceRulesRequest);
 		g_pgetWorkspaceRuleDataHook->hook();
 		
 		HyprlandAPI::addConfigKeyword(PHANDLE, "monitorwsrule", [&](const std::string& k, const std::string& v) {onMonitorWSRule(k,v);});
