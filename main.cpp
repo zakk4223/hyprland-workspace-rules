@@ -188,6 +188,8 @@ std::string hkgetWorkspaceRuleData(const SWorkspaceRule& r, HyprCtl::eHyprCtlOut
     });
     if (IT == g_pConfigManager->m_dWorkspaceRules.end()) {
 				const auto PMONITOR = g_pCompositor->getMonitorFromID(pWorkspace->m_iMonitorID);
+				if (!PMONITOR)
+					return SWorkspaceRule{};
 				const auto MONITORNAME = PMONITOR->szName;
 				std::string MONITORDESC = PMONITOR->output->description ? PMONITOR->output->description : "";
 				//Try monitor specific rules. I overloaded the workspace string....
