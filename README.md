@@ -5,8 +5,9 @@ This plugin adds a keyword to the hyprland config that allows you to specify wor
 
 
 ## Using hyprpm, Hyprland's official plugin manager (recommended)
-1. Run `hyprpm add https://github.com/zakk4223/hyprWorkspaceLayouts` and wait for hyprpm to build the plugin.
-2. Run `hyprpm enable hyprWorkspaceLayouts`
+1. Run `hyprpm add https://github.com/zakk4223/hyprland-workspace-rules` and wait for hyprpm to build the plugin.
+2. Run `hyprpm enable monitor-workspace-rules`
+3. Run hyprpm reload on Hyprland startup. Typically you would just add ```exec-once=hyprpm reload -n``` to your config. 
 
 
 ## Configuration 
