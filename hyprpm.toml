@@ -1,6 +1,10 @@
 [repository]
 name = "monitor-workspace-rules"
 authors = ["Zakk"]
+commit_pins = [
+	["03ebbe18ed8517ee22591eac82cd54322f42cb7d", "91580382abb94cdf459362c98272b62ddcfe3393"]
+]
+
 
 [monitor-workspace-rules]
 description = "Allow per monitor workspace rules"
