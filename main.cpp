@@ -179,6 +179,8 @@ std::string hkgetWorkspaceRuleData(const SWorkspaceRule& r, HyprCtl::eHyprCtlOut
   inline CFunctionHook *g_pgetWorkspaceRuleForHook = nullptr;
 
 	SWorkspaceRule hkgetWorkspaceRuleFor(void *thisptr, CWorkspace* pWorkspace) {
+	if (!pWorkspace)
+		return SWorkspaceRule{};
     const auto WORKSPACEIDSTR = std::to_string(pWorkspace->m_iID);
     const auto IT             = std::find_if(g_pConfigManager->m_dWorkspaceRules.begin(), g_pConfigManager->m_dWorkspaceRules.end(), [&](const auto& other) {
         return other.workspaceName == pWorkspace->m_szName /* name matches */
