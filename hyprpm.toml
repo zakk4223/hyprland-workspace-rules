@@ -3,6 +3,7 @@ name = "monitor-workspace-rules"
 authors = ["Zakk"]
 commit_pins = [
 	["03ebbe18ed8517ee22591eac82cd54322f42cb7d", "91580382abb94cdf459362c98272b62ddcfe3393"]
+	["84ab8d11e8951a6551d1e1bf87796a8589da6d47", "4525c3466cbf5edea95c497515b7e250a1d1af13"]
 ]
 
 
