@@ -30,9 +30,9 @@ std::deque<SWorkspaceRule> g_vMonitorWorkspaceRules;
         str.pop_back();
 	}
 
-std::string hkgetWorkspaceRuleData(const SWorkspaceRule& r, HyprCtl::eHyprCtlOutputFormat format) {
+std::string hkgetWorkspaceRuleData(const SWorkspaceRule& r, eHyprCtlOutputFormat format) {
     const auto boolToString = [](const bool b) -> std::string { return b ? "true" : "false"; };
-    if (format == HyprCtl::FORMAT_JSON) {
+    if (format == FORMAT_JSON) {
         const std::string monitor    = r.monitor.empty() ? "" : std::format(",\n    \"monitor\": \"{}\"", escapeJSONStrings(r.monitor));
         const std::string default_   = (bool)(r.isDefault) ? std::format(",\n    \"default\": {}", boolToString(r.isDefault)) : "";
         const std::string persistent = (bool)(r.isPersistent) ? std::format(",\n    \"persistent\": {}", boolToString(r.isPersistent)) : "";
@@ -85,9 +85,9 @@ std::string hkgetWorkspaceRuleData(const SWorkspaceRule& r, HyprCtl::eHyprCtlOut
     }
 	}
 
-	std::string hkworkspaceRulesRequest(HyprCtl::eHyprCtlOutputFormat format) {
+	std::string hkworkspaceRulesRequest(eHyprCtlOutputFormat format) {
     std::string result = "";
-    if (format == HyprCtl::FORMAT_JSON) {
+    if (format == FORMAT_JSON) {
         result += "[";
         for (auto& r : g_pConfigManager->getAllWorkspaceRules()) {
             result += hkgetWorkspaceRuleData(r, format);
