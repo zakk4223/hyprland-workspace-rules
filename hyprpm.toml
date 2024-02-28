@@ -4,6 +4,7 @@ authors = ["Zakk"]
 commit_pins = [
 	["03ebbe18ed8517ee22591eac82cd54322f42cb7d", "91580382abb94cdf459362c98272b62ddcfe3393"],
 	["84ab8d11e8951a6551d1e1bf87796a8589da6d47", "9ca51620825966f6d429ae5c4f5653d3a58692da"]
+]
 
 [monitor-workspace-rules]
 description = "Allow per monitor workspace rules"
