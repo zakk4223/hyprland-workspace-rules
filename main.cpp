@@ -187,47 +187,41 @@ Hyprlang::CParseResult onMonitorWSRule(const char *K, const char *V) {
 		return result;
 	}
 
-  inline CFunctionHook *g_pgetWorkspaceRuleForHook = nullptr;
+typedef std::vector<SWorkspaceRule> (*origgetWorkspaceRulesFor)(void *, CWorkspace *pWorkspace);
 
-	SWorkspaceRule hkgetWorkspaceRuleFor(void *thisptr, CWorkspace* pWorkspace) {
+inline CFunctionHook *g_pgetWorkspaceRulesForHook = nullptr;
+
+std::vector<SWorkspaceRule> hkgetWorkspaceRulesFor(void *thisptr, CWorkspace* pWorkspace) {
+
+	std::vector<SWorkspaceRule> results;
 	if (!pWorkspace)
-		return SWorkspaceRule{};
-    const auto WORKSPACEIDSTR = std::to_string(pWorkspace->m_iID);
-    const auto IT             = std::find_if(g_pConfigManager->m_dWorkspaceRules.begin(), g_pConfigManager->m_dWorkspaceRules.end(), [&](const auto& other) {
-        return other.workspaceName == pWorkspace->m_szName /* name matches */
-            || (pWorkspace->m_bIsSpecialWorkspace && other.workspaceName.starts_with("special:") &&
-                other.workspaceName.substr(8) == pWorkspace->m_szName)           /* special and special:name */
-            || (pWorkspace->m_iID > 0 && WORKSPACEIDSTR == other.workspaceName); /* id matches and workspace is numerical */
-    });
-    if (IT == g_pConfigManager->m_dWorkspaceRules.end()) {
-				const auto PMONITOR = g_pCompositor->getMonitorFromID(pWorkspace->m_iMonitorID);
-				if (!PMONITOR)
-					return SWorkspaceRule{};
-				const auto MONITORNAME = PMONITOR->szName;
-				std::string MONITORDESC = (PMONITOR->output && PMONITOR->output->description) ? PMONITOR->output->description : "";
-				//Try monitor specific rules. I overloaded the workspace string....
-				const auto MT = std::find_if(g_pConfigManager->m_dWorkspaceRules.begin(), g_pConfigManager->m_dWorkspaceRules.end(), [&](const auto& other) {
-					return other.workspaceString == MONITORNAME || (other.workspaceString.starts_with("desc:") && (other.workspaceString.substr(5) == MONITORDESC || other.workspaceString.substr(5) == removeBeginEndSpacesTabs(MONITORDESC.substr(0,MONITORDESC.find_first_of('('))))); });
-				if (MT == g_pConfigManager->m_dWorkspaceRules.end()) {
-        	return SWorkspaceRule{};
-				} else {
-					return *MT;
-				}
-		}
-    return *IT;
-	}
+		return results;
 
 
+	 results = (*(origgetWorkspaceRulesFor)g_pgetWorkspaceRulesForHook->m_pOriginal)(thisptr, pWorkspace);
+
+	 //Now add monitor rules to it.
+	
+	 const auto PMONITOR = g_pCompositor->getMonitorFromID(pWorkspace->m_iMonitorID);
+	 if (!PMONITOR)
+		return results;
+
+	 for (auto &rule : g_pConfigManager->m_dWorkspaceRules) {
+		if (PMONITOR->matchesStaticSelector(rule.workspaceString))
+			results.push_back(rule);
+	 }
+	 return results;
 }
 
+}
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;
 
 
 		
-	 	static const auto WSRULEMETHODS = HyprlandAPI::findFunctionsByName(PHANDLE, "getWorkspaceRuleFor");
-		g_pgetWorkspaceRuleForHook = HyprlandAPI::createFunctionHook(PHANDLE, WSRULEMETHODS[0].address, (void *)&hkgetWorkspaceRuleFor);
-		g_pgetWorkspaceRuleForHook->hook();
+	 	static const auto WSRULEMETHODS = HyprlandAPI::findFunctionsByName(PHANDLE, "getWorkspaceRulesFor");
+		g_pgetWorkspaceRulesForHook = HyprlandAPI::createFunctionHook(PHANDLE, WSRULEMETHODS[0].address, (void *)&hkgetWorkspaceRulesFor);
+		g_pgetWorkspaceRulesForHook->hook();
 	 	static const auto WSRULECTL = HyprlandAPI::findFunctionsByName(PHANDLE, "workspaceRulesRequest");
 		g_pgetWorkspaceRuleDataHook = HyprlandAPI::createFunctionHook(PHANDLE, WSRULECTL[0].address, (void *)&hkworkspaceRulesRequest);
 		g_pgetWorkspaceRuleDataHook->hook();
