@@ -1,3 +1,6 @@
+# THIS PLUGIN IS MOSTLY UNNEEDED NOW. SEE HYPRLAND'S "WORKSPACE SELECTORS" (https://wiki.hyprland.org/Configuring/Workspace-Rules/#workspace-selectors)
+
+
 # Set workspace rules for monitors 
 
 
